@@ -102,3 +102,17 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# other user-specified files
+/dataset/benchmarkdataset/
+/dataset/gtzan/
+/benchmark_labels.p
+/benchmark_spectrograms.p
+/gtzan_labels_labels.p
+/gtzan_spectrograms.p
+/.idea/inspectionProfiles/
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/music-genre-classification.iml
+/.idea/vcs.xml
