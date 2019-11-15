@@ -36,6 +36,7 @@ def main():
     print(benchmark_labels.shape)
     print(gtzan_labels.shape)
 
+    # todo: remove the temporary example for plotting spectrogram.
     spectrogram = gtzan_spectrograms[5]
 
     plt.pcolormesh(10 * np.log10(spectrogram))
