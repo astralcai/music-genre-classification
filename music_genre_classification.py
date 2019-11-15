@@ -24,10 +24,10 @@ def main():
         print('The total time used for loading and preprocessing the data was', time.time() - st_data_preprocessing)
 
     # Use the following to load spectrograms:
-    benchmark_spectrograms = pickle.load(open('benchmark_spectrograms.p', 'rb'))
-    gtzan_spectrograms = pickle.load(open('gtzan_spectrograms.p', 'rb'))
-    benchmark_labels = pickle.load(open('benchmark_labels.p', 'rb'))
-    gtzan_labels = pickle.load(open('gtzan_labels_labels.p', 'rb'))
+    benchmark_spectrograms = pickle.load(open('dataset/benchmark_spectrograms.p', 'rb'))
+    gtzan_spectrograms = pickle.load(open('dataset/gtzan_spectrograms.p', 'rb'))
+    benchmark_labels = pickle.load(open('dataset/benchmark_labels.p', 'rb'))
+    gtzan_labels = pickle.load(open('dataset/gtzan_labels_labels.p', 'rb'))
 
     print(benchmark_spectrograms.shape)
     print(gtzan_spectrograms.shape)
