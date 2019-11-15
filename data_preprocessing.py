@@ -117,15 +117,19 @@ def spectrogram_of_dataset(dataset, expected_music_length):
         x = dataset[i]
         nperseg = 256
         if expected_music_length == 10:
-            frequencies, times, Sxx = signal.spectrogram(x, nperseg=nperseg)
+            frequencies, times, Sxx = signal.spectrogram(x, window=('tukey', 0.25), nperseg=nperseg)
             spectrograms.append(Sxx)
         else:
             # expected_music_length == 30
             # partition the sample into 3 equal parts if the song was 30 seconds long originally.
             partition_size = len(x) // 3
-            frequencies_1, times_1, Sxx_1 = signal.spectrogram(x[:partition_size], nperseg=nperseg)
-            frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2], nperseg=nperseg)
-            frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:], nperseg=nperseg)
+            frequencies_1, times_1, Sxx_1 = signal.spectrogram(x[:partition_size],
+                                                               window=('tukey', 0.25), nperseg=nperseg)
+            frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2],
+                                                               window=('tukey', 0.25), nperseg=nperseg)
+            frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:],
+                                                               window=('tukey', 0.25), nperseg=nperseg)
+
             spectrograms.append(Sxx_1)
             spectrograms.append(Sxx_2)
             spectrograms.append(Sxx_3)

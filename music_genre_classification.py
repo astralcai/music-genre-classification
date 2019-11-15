@@ -1,6 +1,8 @@
 import sys
 import time
 import pickle
+import matplotlib.pyplot as plt
+import numpy as np
 
 import data_preprocessing
 
@@ -33,6 +35,12 @@ def main():
     print(gtzan_spectrograms.shape)
     print(benchmark_labels.shape)
     print(gtzan_labels.shape)
+
+    spectrogram = gtzan_spectrograms[5]
+
+    plt.pcolormesh(10 * np.log10(spectrogram))
+    plt.colorbar()
+    plt.show()
 
 
 main()
