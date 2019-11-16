@@ -228,13 +228,10 @@ def data_preprocessing():
     # pickling data
     benchmark_spectrograms_base_path = 'dataset/benchmark_spectrograms'
     gtzan_spectrograms_base_path = 'dataset/gtzan_spectrograms'
-    benchmark_labels_base_path = 'dataset/benchmark_labels'
-    gtzan_labels_base_path = 'dataset/gtzan_labels_labels'
     # modify name_suffix to choose dataset
     name_suffix = '_256'
     pickle_ext = '.p'
-
     pickle.dump(benchmark_spectrograms, open(benchmark_spectrograms_base_path + name_suffix + pickle_ext, 'wb'))
     pickle.dump(gtzan_spectrograms, open(gtzan_spectrograms_base_path + name_suffix + pickle_ext, 'wb'))
-    pickle.dump(benchmark_labels, open(benchmark_labels_base_path + pickle_ext, 'wb'))
-    pickle.dump(gtzan_labels, open(gtzan_labels_base_path + pickle_ext, 'wb'))
+    pickle.dump(benchmark_labels, open('dataset/benchmark_labels.p', 'wb'))
+    pickle.dump(gtzan_labels, open('dataset/gtzan_labels_labels.p', 'wb'))

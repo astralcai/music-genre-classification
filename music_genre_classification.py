@@ -28,15 +28,13 @@ def main():
     # Use the following to load spectrograms:
     benchmark_spectrograms_base_path = 'dataset/benchmark_spectrograms'
     gtzan_spectrograms_base_path = 'dataset/gtzan_spectrograms'
-    benchmark_labels_base_path = 'dataset/benchmark_labels'
-    gtzan_labels_base_path = 'dataset/gtzan_labels_labels'
     # modify name_suffix to choose dataset
     name_suffix = '_256'
     pickle_ext = '.p'
     benchmark_spectrograms = pickle.load(open(benchmark_spectrograms_base_path + name_suffix + pickle_ext, 'rb'))
     gtzan_spectrograms = pickle.load(open(gtzan_spectrograms_base_path + name_suffix + pickle_ext, 'rb'))
-    benchmark_labels = pickle.load(open(benchmark_labels_base_path + pickle_ext, 'rb'))
-    gtzan_labels = pickle.load(open(gtzan_labels_base_path+ pickle_ext, 'rb'))
+    benchmark_labels = pickle.load(open('dataset/benchmark_labels.p', 'rb'))
+    gtzan_labels = pickle.load(open('dataset/gtzan_labels_label.ps', 'rb'))
 
     print(benchmark_spectrograms.shape)
     print(gtzan_spectrograms.shape)
