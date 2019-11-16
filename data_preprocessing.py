@@ -2,6 +2,7 @@ import librosa
 import numpy as np
 import time
 import pickle
+import scipy
 from scipy import signal
 
 
@@ -51,6 +52,15 @@ def read_all_music(base_path, classifications, sample_rate, expected_music_lengt
     """
     dataset = []
     labels = []
+
+    # (len(x) - window_length) // (window_length - window_length//8) + 1 = spectrogram number of columns
+    window_length_to_max_sample_length = {256: 220223, 1024: 220543}
+    upper_bound = window_length_to_max_sample_length[window_length]
+
+    # todo: remove debugging code
+    max_length = -1
+    min_length = 100000000
+
     counter = 0
     for i in range(len(classifications)):
         classification = classifications[i]
@@ -65,19 +75,27 @@ def read_all_music(base_path, classifications, sample_rate, expected_music_lengt
                 # resample the sample if the sample rate is not 22050 Hz.
                 x = librosa.resample(x, sample_rate, 22050)
             len_x = len(x)
-            if len_x > 220223 and expected_music_length == 10:
-                # need to ensure the length is less than 220223 to have spectrograms of the same dimension
-                x = x[0:220223]
-            elif len_x > 660669 and expected_music_length == 30:
-                # need to ensure the length is less than 220223*3 = 660669 to have spectrograms of the same dimension
-                x = x[0:660669]
+            if expected_music_length == 10 and len_x > upper_bound:
+                # need to ensure the length is less than upper_bound to have spectrograms of the same dimension
+                x = x[0:upper_bound]
+            elif expected_music_length == 30 and len_x > upper_bound*3:
+                # need to ensure the length is less than upper_bound * 3 to have spectrograms of the same dimension
+                x = x[0:upper_bound*3]
+
+            # todo: remove debugging code
+            if len_x > max_length:
+                max_length = len_x
+                print('warning 1: max_length is', max_length, 'at', path_to_music)
+            if len_x < min_length:
+                min_length = len_x
+                print('warning 2: min_length is', min_length, 'at', path_to_music)
+
             dataset.append(x)
             labels.append(i)
             counter += 1
     try:
         dataset = np.array(dataset)
     except:
-        # cannot convert dataset to numpy array if the samples have different dimensions.
         print('Warning: cannot convert dataset to numpy array.')
     return dataset, np.array(labels)
 
@@ -120,22 +138,46 @@ def spectrogram_of_dataset(dataset, expected_music_length, window_length):
                         .format(expected_music_length))
 
     spectrograms = []  # spectrograms = np.empty((len(dataset), 129, 989))
+
+    window = scipy.signal.hanning(window_length)
+
+    max_spec_length = -1
+    min_spec_length = 1000000000
     for i in range(len(dataset)):
         x = dataset[i]
-        nperseg = 256
         if expected_music_length == 10:
-            frequencies, times, Sxx = signal.spectrogram(x, window=('tukey', 0.25), nperseg=nperseg)
+            frequencies, times, Sxx = signal.spectrogram(x, window=window)
             spectrograms.append(Sxx)
+
+            # todo: remove debugging code
+            if len(Sxx) > max_spec_length:
+                max_spec_length = len(Sxx)
+                print('warning 3: max_spec_length is', max_spec_length)
+            if len(Sxx) < min_spec_length:
+                min_spec_length = len(Sxx)
+                print('warning 4: min_spec_length is', min_spec_length)
+
         else:
             # expected_music_length == 30
             # partition the sample into 3 equal parts if the song was 30 seconds long originally.
             partition_size = len(x) // 3
-            frequencies_1, times_1, Sxx_1 = signal.spectrogram(x[:partition_size],
-                                                               window=('tukey', 0.25), nperseg=nperseg)
-            frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2],
-                                                               window=('tukey', 0.25), nperseg=nperseg)
-            frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:],
-                                                               window=('tukey', 0.25), nperseg=nperseg)
+            frequencies_1, times_1, Sxx_1 = signal.spectrogram(x[:partition_size], window=window)
+            frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2], window=window)
+            frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:], window=window)
+
+            # todo: remove debugging code
+            if len(Sxx_1[0]) > max_spec_length:
+                max_spec_length = len(Sxx_1[0])
+                print('warning 5: max_spec_length is', max_spec_length)
+            if len(Sxx_1[0]) < min_spec_length:
+                min_spec_length = len(Sxx_1[0])
+                print('warning 6: min_spec_length is', min_spec_length)
+            if len(Sxx_3[0]) > max_spec_length:
+                max_spec_length = len(Sxx_3[0])
+                print('warning 7: max_spec_length is', max_spec_length)
+            if len(Sxx_3[0]) < min_spec_length:
+                min_spec_length = len(Sxx_3[0])
+                print('warning 8: min_spec_length is', min_spec_length)
 
             spectrograms.append(Sxx_1)
             spectrograms.append(Sxx_2)
@@ -155,6 +197,8 @@ def data_preprocessing():
     """
     print('Preprocessing data...')
     classifications = np.array(['blues', 'hiphop', 'jazz', 'pop', 'rock'], dtype=object)
+    # classifications = np.array(['pop'], dtype=object)
+    # todo: remove debugging code above
 
     # paths to datasets
     benchmark_base_path = 'dataset/benchmarkdataset/'
