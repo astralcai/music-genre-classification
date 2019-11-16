@@ -34,7 +34,7 @@ def main():
     benchmark_spectrograms = pickle.load(open(benchmark_spectrograms_base_path + name_suffix + pickle_ext, 'rb'))
     gtzan_spectrograms = pickle.load(open(gtzan_spectrograms_base_path + name_suffix + pickle_ext, 'rb'))
     benchmark_labels = pickle.load(open('dataset/benchmark_labels.p', 'rb'))
-    gtzan_labels = pickle.load(open('dataset/gtzan_labels_label.ps', 'rb'))
+    gtzan_labels = pickle.load(open('dataset/gtzan_labels_labels.p', 'rb'))
 
     print(benchmark_spectrograms.shape)
     print(gtzan_spectrograms.shape)
