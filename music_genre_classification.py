@@ -25,20 +25,20 @@ def main():
         data_preprocessing.data_preprocessing()
         print('The total time used for loading and preprocessing the data was', time.time() - st_data_preprocessing)
 
-    # modify two parameters below to choose dataset
+    # modify the two parameters below to choose dataset
     # segment length in seconds passed to generate spectrograms, and window length.
-    seg_length_to_spectrogram = 5
+    segment_length = 5
     window_length = 1024
 
     # load spectrograms
-    seg_length_suffix = '_' + str(seg_length_to_spectrogram)
+    seg_length_suffix = '_' + str(segment_length)
     window_length_suffix = '_' + str(window_length)
     benchmark_spectrograms = pickle.load(
         open('dataset/benchmark_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'rb'))
     gtzan_spectrograms = pickle.load(
         open('dataset/gtzan_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'rb'))
     benchmark_labels = pickle.load(open('dataset/benchmark_labels' + seg_length_suffix + '.p', 'rb'))
-    gtzan_labels = pickle.load(open('dataset/gtzan_labels_labels' + seg_length_suffix + '.p', 'rb'))
+    gtzan_labels = pickle.load(open('dataset/gtzan_labels' + seg_length_suffix + '.p', 'rb'))
 
     print(benchmark_spectrograms[1].shape)
     print(benchmark_spectrograms.shape)
