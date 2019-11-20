@@ -90,43 +90,43 @@ def read_all_music(base_path, classifications, sample_rate):
     return dataset, np.array(labels)
 
 
-def spectrograms_benchmark(dataset, seg_length_to_spectrogram, window_length, overlap_ratio):
+def spectrograms_benchmark(dataset, segment_length, window_length, overlap_ratio):
     """
     Compute the spectrograms for the songs in the Benchmark dataset.
     The data are resampled from 44100 Hz to 22050 Hz.
     :param dataset: relevant data in the Benchmark dataset.
-    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
+    :param segment_length: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio of the windows.
     :return: the spectrograms.
     """
     expected_music_length = 10
-    return spectrogram_of_dataset(dataset, expected_music_length, seg_length_to_spectrogram,
+    return spectrogram_of_dataset(dataset, expected_music_length, segment_length,
                                   window_length, overlap_ratio)
 
 
-def spectrograms_gtzan(dataset, seg_length_to_spectrogram, window_length, overlap_ratio):
+def spectrograms_gtzan(dataset, segment_length, window_length, overlap_ratio):
     """
     Compute the spectrograms for the songs in the GTZAN dataset.
     Each sample is partitioned into approximately 3 equal parts since each song was originally 30 seconds long
     and thus we analyze samples corresponding to 10-second long clips.
     :param dataset: relevant data in the GTZAN dataset.
-    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
+    :param segment_length: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio of the windows.
     :return: the spectrograms.
     """
     expected_music_length = 30
     return spectrogram_of_dataset(dataset, expected_music_length,
-                                  seg_length_to_spectrogram, window_length, overlap_ratio)
+                                  segment_length, window_length, overlap_ratio)
 
 
-def spectrogram_of_dataset(dataset, expected_music_length, seg_length_to_spectrogram, window_length, overlap_ratio):
+def spectrogram_of_dataset(dataset, expected_music_length, segment_length, window_length, overlap_ratio):
     """
     Compute the spectrograms for the samples in the given dataset.
     :param dataset: the dataset containing the samples.
     :param expected_music_length: the time length in seconds for the original music sample.
-    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
+    :param segment_length: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio.
     :return: the spectrograms
@@ -154,11 +154,11 @@ def spectrogram_of_dataset(dataset, expected_music_length, seg_length_to_spectro
     # upper_bound = window_length_to_max_sample_length[window_length]
 
     upper_bound = 999999
-    if seg_length_to_spectrogram == 3:
+    if segment_length == 3:
         upper_bound = 66047
-    elif seg_length_to_spectrogram == 5:
+    elif segment_length == 5:
         upper_bound = 110079
-    elif seg_length_to_spectrogram == 10:
+    elif segment_length == 10:
         upper_bound = 220159
 
     max_spec_length = -1
@@ -166,7 +166,7 @@ def spectrogram_of_dataset(dataset, expected_music_length, seg_length_to_spectro
     for i in range(len(dataset)):
         sample = np.array(dataset[i])
 
-        sample_partitions = get_spectrogram_partitions(sample, expected_music_length, seg_length_to_spectrogram)
+        sample_partitions = get_spectrogram_partitions(sample, expected_music_length, segment_length)
         # length of each partition
 
         if sample_partitions.shape[1] > upper_bound:
@@ -289,7 +289,7 @@ def data_preprocessing():
         print()
 
     # the length of music segments in seconds passed in to create spectrograms. Should be in (0, 10).
-    seg_length_to_spectrogram = 5
+    segment_length = 5
     # length of window, should be a power of 2 for faster computation.
     window_length = 1024
     # should use 50% window overlapping percentage.
@@ -301,25 +301,25 @@ def data_preprocessing():
     benchmark_labels = pickle.load(open('dataset/benchmark_labels_not_replicated.p', 'rb'))
     gtzan_labels = pickle.load(open('dataset/gtzan_labels_not_replicated.p', 'rb'))
 
-    benchmark_labels = replicate_elements_in_array(benchmark_labels, 10 // seg_length_to_spectrogram)
-    gtzan_labels = replicate_elements_in_array(gtzan_labels, 30 // seg_length_to_spectrogram)
+    benchmark_labels = replicate_elements_in_array(benchmark_labels, 10 // segment_length)
+    gtzan_labels = replicate_elements_in_array(gtzan_labels, 30 // segment_length)
 
     # compute spectrograms
     t_4 = time.time()
-    benchmark_spectrograms = spectrograms_benchmark(benchmark_dataset, seg_length_to_spectrogram, window_length, overlap_ratio)
+    benchmark_spectrograms = spectrograms_benchmark(benchmark_dataset, segment_length, window_length, overlap_ratio)
     t_5 = time.time()
     print('The time used for calculating spectrograms for the Benchmark dataset was', t_5 - t_4)
-    gtzan_spectrograms = spectrograms_gtzan(gtzan_dataset, seg_length_to_spectrogram, window_length, overlap_ratio)
+    gtzan_spectrograms = spectrograms_gtzan(gtzan_dataset, segment_length, window_length, overlap_ratio)
     t_6 = time.time()
     print('The time used for calculating spectrograms for the GTZAN dataset was', t_6 - t_5)
 
     print('Window length is', window_length, 'overlap ratio is', overlap_ratio,
-          'seg length is', seg_length_to_spectrogram)
+          'seg length is', segment_length)
     print()
 
     # pickling data
     # modify seg_length_suffix to choose dataset
-    seg_length_suffix = '_' + str(seg_length_to_spectrogram)
+    seg_length_suffix = '_' + str(segment_length)
     window_length_suffix = '_' + str(window_length)
     pickle.dump(benchmark_spectrograms,
                 open('dataset/benchmark_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
