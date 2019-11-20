@@ -6,7 +6,11 @@ import scipy
 from scipy import signal
 
 
-def read_all_music_benchmark(base_path, classifications, window_length, overlap_ratio):
+def replicate_elements_in_array(arr, num_reps):
+    return np.array([x for x in arr for _ in [r for r in range(num_reps)]])
+
+
+def read_all_music_benchmark(base_path, classifications):
     """
     Read the songs in the Benchmark dataset that fall into the given classifications.
     There are 120 (blues) + 300 (hip-pop) + 319 (jazz) + 116 (pop) + 504 (rock) = 1359 songs.
@@ -14,55 +18,40 @@ def read_all_music_benchmark(base_path, classifications, window_length, overlap_
     The samples are resampled to be 22050 Hz.
     :param base_path: path to the dataset.
     :param classifications: the classifications to load.
-    :param window_length: the number of points in the output window.
-    :param overlap_ratio: The overlapping ratio of the windows.
-
     :return: the music data, the labels for each music.
     """
     print('Loading files for the Benchmark dataset.')
     benchmark_sample_rate = 44100
     expected_music_length = 10
-    return read_all_music(base_path, classifications, benchmark_sample_rate, expected_music_length,
-                          window_length, overlap_ratio)
+    return read_all_music(base_path, classifications, benchmark_sample_rate)
 
 
-def read_all_music_gtzan(base_path, classifications, window_length, overlap_ratio):
+def read_all_music_gtzan(base_path, classifications):
     """
     Read the songs in the GTZAN dataset that fall into the given classifications.
     There are 100 * 5 = 500 songs.
     Each song is around 30 seconds long and the sample rate is 22050 Hz.
     :param base_path: path to the GTZAN dataset.
     :param classifications: the classifications to load.
-    :param window_length: the number of points in the output window.
-    :param overlap_ratio: The overlapping ratio of the windows.
     :return: the music data, the labels for each music.
     """
     print('Loading files for the GTZAN dataset.')
     gtzan_sample_rate = 22050
     expected_music_length = 30
-    return read_all_music(base_path, classifications, gtzan_sample_rate, expected_music_length,
-                          window_length, overlap_ratio)
+    return read_all_music(base_path, classifications, gtzan_sample_rate)
 
 
-def read_all_music(base_path, classifications, sample_rate, expected_music_length, window_length, overlap_ratio):
+def read_all_music(base_path, classifications, sample_rate):
     """
     Read the songs in the dataset specified by the base path and which fall into the given classifications.
     Some samples are cut to be a little shorter to ensure that the spectrograms have the same dimensions.
     :param base_path: path to the dataset.
     :param classifications:  the classifications to load.
     :param sample_rate: sample rate of the songs.
-    :param expected_music_length: expected music lengths in seconds.
-    :param window_length: the number of points in the output window.
-    :param overlap_ratio: The overlapping ratio of the windows.
     :return: the music data, the labels for each music.
     """
     dataset = []
     labels = []
-
-    # (len(x) - window_length) // (window_length - window_length//8) + 1 = spectrogram number of columns
-    # window_length_to_max_sample_length_125 = {256: 220223, 512: 999999, 1024: 220543}
-    window_length_to_max_sample_length = {512: 220159, 1024: 220159, 2048: 220159}
-    upper_bound = window_length_to_max_sample_length[window_length]
 
     # todo: remove debugging code
     max_length = -1
@@ -82,12 +71,6 @@ def read_all_music(base_path, classifications, sample_rate, expected_music_lengt
                 # resample the sample if the sample rate is not 22050 Hz.
                 x = librosa.resample(x, sample_rate, 22050)
             len_x = len(x)
-            if expected_music_length == 10 and len_x > upper_bound:
-                # need to ensure the length is less than upper_bound to have spectrograms of the same dimension
-                x = x[0:upper_bound]
-            elif expected_music_length == 30 and len_x > upper_bound*3:
-                # need to ensure the length is less than upper_bound * 3 to have spectrograms of the same dimension
-                x = x[0:upper_bound*3]
 
             # todo: remove debugging code
             if len_x > max_length:
@@ -107,38 +90,43 @@ def read_all_music(base_path, classifications, sample_rate, expected_music_lengt
     return dataset, np.array(labels)
 
 
-def spectrograms_benchmark(dataset, window_length, overlap_ratio):
+def spectrograms_benchmark(dataset, seg_length_to_spectrogram, window_length, overlap_ratio):
     """
     Compute the spectrograms for the songs in the Benchmark dataset.
     The data are resampled from 44100 Hz to 22050 Hz.
     :param dataset: relevant data in the Benchmark dataset.
+    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio of the windows.
     :return: the spectrograms.
     """
     expected_music_length = 10
-    return spectrogram_of_dataset(dataset, expected_music_length, window_length, overlap_ratio)
+    return spectrogram_of_dataset(dataset, expected_music_length, seg_length_to_spectrogram,
+                                  window_length, overlap_ratio)
 
 
-def spectrograms_gtzan(dataset, window_length, overlap_ratio):
+def spectrograms_gtzan(dataset, seg_length_to_spectrogram, window_length, overlap_ratio):
     """
     Compute the spectrograms for the songs in the GTZAN dataset.
     Each sample is partitioned into approximately 3 equal parts since each song was originally 30 seconds long
     and thus we analyze samples corresponding to 10-second long clips.
     :param dataset: relevant data in the GTZAN dataset.
+    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio of the windows.
     :return: the spectrograms.
     """
     expected_music_length = 30
-    return spectrogram_of_dataset(dataset, expected_music_length, window_length, overlap_ratio)
+    return spectrogram_of_dataset(dataset, expected_music_length,
+                                  seg_length_to_spectrogram, window_length, overlap_ratio)
 
 
-def spectrogram_of_dataset(dataset, expected_music_length, window_length, overlap_ratio):
+def spectrogram_of_dataset(dataset, expected_music_length, seg_length_to_spectrogram, window_length, overlap_ratio):
     """
     Compute the spectrograms for the samples in the given dataset.
     :param dataset: the dataset containing the samples.
     :param expected_music_length: the time length in seconds for the original music sample.
+    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio.
     :return: the spectrograms
@@ -152,11 +140,49 @@ def spectrogram_of_dataset(dataset, expected_music_length, window_length, overla
     window = scipy.signal.hanning(window_length)
     noverlap = window_length // (1/overlap_ratio)
 
+
+    # (len(x) - window_length) // (window_length - window_length//(1/overlap_ratio)) + 1 = spectrogram number of columns
+    # For testing:
+    # window_length_to_max_sample_length = {256: 999999, 512: 999999, 1024: 999999}
+    # 3 seconds:
+    # window_length_to_max_sample_length = {256: 66559, 512: 66559, 1024: 66559}
+    # 5 seconds:
+    # window_length_to_max_sample_length = {256: 110079, 512: 110079, 1024: 110079}
+    # 10 seconds
+    # window_length_to_max_sample_length = {512: 220159, 1024: 220159, 2048: 220159}
+
+    # upper_bound = window_length_to_max_sample_length[window_length]
+
+    upper_bound = 999999
+    if seg_length_to_spectrogram == 3:
+        upper_bound = 66047
+    elif seg_length_to_spectrogram == 5:
+        upper_bound = 110079
+    elif seg_length_to_spectrogram == 10:
+        upper_bound = 220159
+
     max_spec_length = -1
     min_spec_length = 1000000000
     for i in range(len(dataset)):
-        x = dataset[i]
-        if expected_music_length == 10:
+        sample = np.array(dataset[i])
+
+        sample_partitions = get_spectrogram_partitions(sample, expected_music_length, seg_length_to_spectrogram)
+        # length of each partition
+
+        if sample_partitions.shape[1] > upper_bound:
+            sample_partitions = sample_partitions[:, 0:upper_bound]
+
+        # if expected_music_length == 10 and len_x > upper_bound:
+        #     # need to ensure the length is less than upper_bound to have spectrograms of the same dimension
+        #     sample_partitions = sample_partitions[:, 0:upper_bound]
+        # elif expected_music_length == 30 and len_x > upper_bound * 3:
+        #     # need to ensure the length is less than upper_bound * 3 to have spectrograms of the same dimension
+        #     sample_partitions = sample_partitions[:, 0:upper_bound * 3]
+
+        for j in range(len(sample_partitions)):
+            x = sample_partitions[j]
+
+            # if expected_music_length == 10:
             frequencies, times, Sxx = signal.spectrogram(x, window=window, noverlap=noverlap)
             spectrograms.append(Sxx)
 
@@ -168,31 +194,32 @@ def spectrogram_of_dataset(dataset, expected_music_length, window_length, overla
                 min_spec_length = len(Sxx[0])
                 print('warning 4: min_spec_length is', min_spec_length, 'with len(x)', len(x))
 
-        else:
-            # expected_music_length == 30
-            # partition the sample into 3 equal parts if the song was 30 seconds long originally.
-            partition_size = len(x) // 3
-            frequencies_1, times_1, Sxx_1 = signal.spectrogram(x[:partition_size], window=window, noverlap=noverlap)
-            frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2], window=window, noverlap=noverlap)
-            frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:], window=window, noverlap=noverlap)
+            # else:
+            #     # expected_music_length == 30
+            #     # partition the partitioned sample into 3 equal parts if the song was 30 seconds long originally.
+            #     partition_size = len(x) // 3
+            #     frequencies_1, times_1, Sxx_1 = signal.spectrogram(x[:partition_size], window=window, noverlap=noverlap)
+            #     frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2], window=window, noverlap=noverlap)
+            #     frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:], window=window, noverlap=noverlap)
+            #
+            #     # todo: remove debugging code
+            #     if len(Sxx_1[0]) > max_spec_length:
+            #         max_spec_length = len(Sxx_1[0])
+            #         print('warning 5: max_spec_length is', max_spec_length, 'with len(x)', len(x))
+            #     if len(Sxx_1[0]) < min_spec_length:
+            #         min_spec_length = len(Sxx_1[0])
+            #         print('warning 6: min_spec_length is', min_spec_length, 'with len(x)', len(x))
+            #     if len(Sxx_3[0]) > max_spec_length:
+            #         max_spec_length = len(Sxx_3[0])
+            #         print('warning 7: max_spec_length is', max_spec_length, 'with len(x)', len(x))
+            #     if len(Sxx_3[0]) < min_spec_length:
+            #         min_spec_length = len(Sxx_3[0])
+            #         print('warning 8: min_spec_length is', min_spec_length, 'with len(x)', len(x))
+            #
+            #     spectrograms.append(Sxx_1)
+            #     spectrograms.append(Sxx_2)
+            #     spectrograms.append(Sxx_3)
 
-            # todo: remove debugging code
-            if len(Sxx_1[0]) > max_spec_length:
-                max_spec_length = len(Sxx_1[0])
-                print('warning 5: max_spec_length is', max_spec_length, 'with len(x)', len(x))
-            if len(Sxx_1[0]) < min_spec_length:
-                min_spec_length = len(Sxx_1[0])
-                print('warning 6: min_spec_length is', min_spec_length, 'with len(x)', len(x))
-            if len(Sxx_3[0]) > max_spec_length:
-                max_spec_length = len(Sxx_3[0])
-                print('warning 7: max_spec_length is', max_spec_length, 'with len(x)', len(x))
-            if len(Sxx_3[0]) < min_spec_length:
-                min_spec_length = len(Sxx_3[0])
-                print('warning 8: min_spec_length is', min_spec_length, 'with len(x)', len(x))
-
-            spectrograms.append(Sxx_1)
-            spectrograms.append(Sxx_2)
-            spectrograms.append(Sxx_3)
     try:
         spectrograms = np.array(spectrograms)
     except:
@@ -201,51 +228,102 @@ def spectrogram_of_dataset(dataset, expected_music_length, window_length, overla
     return spectrograms
 
 
+def get_spectrogram_partitions(sample, expected_music_length, seg_length_to_spectrogram):
+    """
+    Partition the sample into specified lengths. The extra end is truncated.
+    :param sample: a sample.
+    :param expected_music_length: the time length in seconds for the original music sample.
+    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
+    :return: partitions of the sample.
+    """
+
+    num_partitions = expected_music_length // seg_length_to_spectrogram
+    len_sample = len(sample)
+    len_partition = len_sample // num_partitions
+
+    sample_partitions = np.empty((num_partitions, len_partition))
+
+    for i in range(num_partitions):
+        start_index = len_partition * i
+        sample_partitions[i, :] = sample[start_index: start_index + len_partition]
+    return sample_partitions
+
+
 def data_preprocessing():
     """
     Preprocess data, includes loading the Benchmark dataset and the GTZAN dataset,
     then compute the spectrograms for each data.
     """
     print('Preprocessing data...')
-    classifications = np.array(['blues', 'hiphop', 'jazz', 'pop', 'rock'], dtype=object)
-    # classifications = np.array(['blues'], dtype=object)
-    # todo: remove debugging code above
 
-    # paths to datasets
-    benchmark_base_path = 'dataset/benchmarkdataset/'
-    gtzan_base_path = 'dataset/gtzan/'
+    load_original_datasets = False
+    if load_original_datasets:
 
-    window_length = 512
-    overlap_ratio = 1/2
-    # read music files
-    t_1 = time.time()
-    benchmark_dataset, benchmark_labels = read_all_music_benchmark(benchmark_base_path, classifications,
-                                                                   window_length, overlap_ratio)
-    t_2 = time.time()
-    gtzan_dataset, gtzan_labels = read_all_music_gtzan(gtzan_base_path, classifications,
-                                                       window_length, overlap_ratio)
-    # replicate the labels 3 times for samples in the GTZAN dataset
-    gtzan_labels = np.array([x for x in gtzan_labels for _ in (0, 1, 2)])
-    t_3 = time.time()
-    print('The time used for loading the Benchmark dataset was', t_2 - t_1)
-    print('The time used for loading the GTZAN dataset was', t_3 - t_2)
+        classifications = np.array(['blues', 'hiphop', 'jazz', 'pop', 'rock'], dtype=object)
+        # classifications = np.array(['blues'], dtype=object)
+        # todo: remove debugging code above
+
+        # paths to datasets
+        benchmark_base_path = 'dataset/benchmarkdataset/'
+        gtzan_base_path = 'dataset/gtzan/'
+
+        # read music files
+        t_1 = time.time()
+        benchmark_dataset, benchmark_labels = read_all_music_benchmark(benchmark_base_path, classifications)
+
+        pickle.dump(benchmark_dataset, open('dataset/benchmark_dataset.p', 'wb'))
+        pickle.dump(benchmark_labels, open('dataset/benchmark_labels_not_replicated.p', 'wb'))
+
+
+        t_2 = time.time()
+        gtzan_dataset, gtzan_labels = read_all_music_gtzan(gtzan_base_path, classifications)
+
+
+        pickle.dump(gtzan_dataset, open('dataset/gtzan_dataset.p', 'wb'))
+        pickle.dump(gtzan_labels, open('dataset/gtzan_labels_not_replicated.p', 'wb'))
+
+        t_3 = time.time()
+        print('The time used for loading the Benchmark dataset was', t_2 - t_1)
+        print('The time used for loading the GTZAN dataset was', t_3 - t_2)
+        print('The total time used for loading datasets was', t_3 - t_1)
+        print()
+
+    # the length of music segments in seconds passed in to create spectrograms. Should be in (0, 10).
+    seg_length_to_spectrogram = 5
+    # length of window, should be a power of 2 for faster computation.
+    window_length = 1024
+    # should use 50% window overlapping percentage.
+    overlap_ratio = 1 / 2
+
+    benchmark_dataset = pickle.load(open('dataset/benchmark_dataset.p', 'rb'))
+    gtzan_dataset = pickle.load(open('dataset/gtzan_dataset.p', 'rb'))
+
+    benchmark_labels = pickle.load(open('dataset/benchmark_labels_not_replicated.p', 'rb'))
+    gtzan_labels = pickle.load(open('dataset/gtzan_labels_not_replicated.p', 'rb'))
+
+    benchmark_labels = replicate_elements_in_array(benchmark_labels, 10 // seg_length_to_spectrogram)
+    gtzan_labels = replicate_elements_in_array(gtzan_labels, 30 // seg_length_to_spectrogram)
 
     # compute spectrograms
     t_4 = time.time()
-    benchmark_spectrograms = spectrograms_benchmark(benchmark_dataset, window_length, overlap_ratio)
+    benchmark_spectrograms = spectrograms_benchmark(benchmark_dataset, seg_length_to_spectrogram, window_length, overlap_ratio)
     t_5 = time.time()
     print('The time used for calculating spectrograms for the Benchmark dataset was', t_5 - t_4)
-    gtzan_spectrograms = spectrograms_gtzan(gtzan_dataset, window_length, overlap_ratio)
+    gtzan_spectrograms = spectrograms_gtzan(gtzan_dataset, seg_length_to_spectrogram, window_length, overlap_ratio)
     t_6 = time.time()
     print('The time used for calculating spectrograms for the GTZAN dataset was', t_6 - t_5)
 
-    print('Window length is', window_length, 'and overlap ratio is', overlap_ratio)
+    print('Window length is', window_length, 'overlap ratio is', overlap_ratio,
+          'seg length is', seg_length_to_spectrogram)
     print()
 
     # pickling data
-    # modify name_suffix to choose dataset
-    name_suffix = '_' + str(window_length)
-    pickle.dump(benchmark_spectrograms, open('dataset/benchmark_spectrograms' + name_suffix + '.p', 'wb'))
-    pickle.dump(gtzan_spectrograms, open('dataset/gtzan_spectrograms' + name_suffix + '.p', 'wb'))
-    pickle.dump(benchmark_labels, open('dataset/benchmark_labels.p', 'wb'))
-    pickle.dump(gtzan_labels, open('dataset/gtzan_labels_labels.p', 'wb'))
+    # modify seg_length_suffix to choose dataset
+    seg_length_suffix = '_' + str(seg_length_to_spectrogram)
+    window_length_suffix = '_' + str(window_length)
+    pickle.dump(benchmark_spectrograms,
+                open('dataset/benchmark_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
+    pickle.dump(gtzan_spectrograms,
+                open('dataset/gtzan_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
+    pickle.dump(benchmark_labels, open('dataset/benchmark_labels' + seg_length_suffix + '.p', 'wb'))
+    pickle.dump(gtzan_labels, open('dataset/gtzan_labels_labels' + seg_length_suffix + '.p', 'wb'))

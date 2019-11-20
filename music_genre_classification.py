@@ -25,23 +25,34 @@ def main():
         data_preprocessing.data_preprocessing()
         print('The total time used for loading and preprocessing the data was', time.time() - st_data_preprocessing)
 
-    # Use the following to load spectrograms:
-    # modify name_suffix to choose dataset
-    name_suffix = '_512'
-    benchmark_spectrograms = pickle.load(open('dataset/benchmark_spectrograms' + name_suffix + '.p', 'rb'))
-    gtzan_spectrograms = pickle.load(open('dataset/gtzan_spectrograms' + name_suffix + '.p', 'rb'))
-    benchmark_labels = pickle.load(open('dataset/benchmark_labels.p', 'rb'))
-    gtzan_labels = pickle.load(open('dataset/gtzan_labels_labels.p', 'rb'))
+    # modify two parameters below to choose dataset
+    # segment length in seconds passed to generate spectrograms, and window length.
+    seg_length_to_spectrogram = 5
+    window_length = 1024
 
-    print(benchmark_spectrograms[0].shape)
+    # load spectrograms
+    seg_length_suffix = '_' + str(seg_length_to_spectrogram)
+    window_length_suffix = '_' + str(window_length)
+    benchmark_spectrograms = pickle.load(
+        open('dataset/benchmark_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'rb'))
+    gtzan_spectrograms = pickle.load(
+        open('dataset/gtzan_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'rb'))
+    benchmark_labels = pickle.load(open('dataset/benchmark_labels' + seg_length_suffix + '.p', 'rb'))
+    gtzan_labels = pickle.load(open('dataset/gtzan_labels_labels' + seg_length_suffix + '.p', 'rb'))
+
+    print(benchmark_spectrograms[1].shape)
     print(benchmark_spectrograms.shape)
     print(gtzan_spectrograms.shape)
     print(benchmark_labels.shape)
     print(gtzan_labels.shape)
 
     # todo: remove the temporary example for plotting a spectrogram.
-    spectrogram = gtzan_spectrograms[5]
+    spectrogram = benchmark_spectrograms[0]
+    plt.pcolormesh(10 * np.log10(spectrogram))
+    plt.colorbar()
+    plt.show()
 
+    spectrogram = gtzan_spectrograms[0]
     plt.pcolormesh(10 * np.log10(spectrogram))
     plt.colorbar()
     plt.show()
