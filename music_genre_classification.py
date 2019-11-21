@@ -27,7 +27,7 @@ def main():
 
     # modify the two parameters below to choose dataset
     # segment length in seconds passed to generate spectrograms, and window length.
-    segment_length = 5
+    segment_length = 3
     window_length = 1024
 
     # load spectrograms

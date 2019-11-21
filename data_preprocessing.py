@@ -86,42 +86,44 @@ def read_all_music(base_path, classifications, sample_rate):
     try:
         dataset = np.array(dataset)
     except:
-        print('Warning: cannot convert dataset to numpy array.')
+        print('Warning 10: cannot convert dataset to numpy array.')
     return dataset, np.array(labels)
 
 
-def spectrograms_benchmark(dataset, segment_length, window_length, overlap_ratio):
+def spectrograms_benchmark(dataset, labels, segment_length, window_length, overlap_ratio):
     """
     Compute the spectrograms for the songs in the Benchmark dataset.
     The data are resampled from 44100 Hz to 22050 Hz.
     :param dataset: relevant data in the Benchmark dataset.
+    :param labels: labels for the Benchmark dataset.
     :param segment_length: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio of the windows.
     :return: the spectrograms.
     """
     expected_music_length = 10
-    return spectrogram_of_dataset(dataset, expected_music_length, segment_length,
+    return spectrogram_of_dataset(dataset, labels, expected_music_length, segment_length,
                                   window_length, overlap_ratio)
 
 
-def spectrograms_gtzan(dataset, segment_length, window_length, overlap_ratio):
+def spectrograms_gtzan(dataset, labels, segment_length, window_length, overlap_ratio):
     """
     Compute the spectrograms for the songs in the GTZAN dataset.
     Each sample is partitioned into approximately 3 equal parts since each song was originally 30 seconds long
     and thus we analyze samples corresponding to 10-second long clips.
     :param dataset: relevant data in the GTZAN dataset.
+    :param labels: labels for the GTZAN dataset.
     :param segment_length: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio of the windows.
     :return: the spectrograms.
     """
     expected_music_length = 30
-    return spectrogram_of_dataset(dataset, expected_music_length,
+    return spectrogram_of_dataset(dataset, labels, expected_music_length,
                                   segment_length, window_length, overlap_ratio)
 
 
-def spectrogram_of_dataset(dataset, expected_music_length, segment_length, window_length, overlap_ratio):
+def spectrogram_of_dataset(dataset, labels, expected_music_length, segment_length, window_length, overlap_ratio):
     """
     Compute the spectrograms for the samples in the given dataset.
     :param dataset: the dataset containing the samples.
@@ -129,13 +131,14 @@ def spectrogram_of_dataset(dataset, expected_music_length, segment_length, windo
     :param segment_length: length of the music segment in seconds passed to create spectrogram.
     :param window_length: the number of points in the output window.
     :param overlap_ratio: The overlapping ratio.
-    :return: the spectrograms
+    :return: the spectrograms, labels for each spectrogram
     """
     if expected_music_length not in (10, 30):
         raise Exception('Variable expected_music_length should be either 10 or 30, but received {}.'
                         .format(expected_music_length))
 
-    spectrograms = []  # spectrograms = np.empty((len(dataset), 129, 989))
+    spectrograms = []
+    spectrogram_labels = []
 
     window = scipy.signal.hanning(window_length)
     noverlap = window_length // (1/overlap_ratio)
@@ -153,24 +156,45 @@ def spectrogram_of_dataset(dataset, expected_music_length, segment_length, windo
 
     # upper_bound = window_length_to_max_sample_length[window_length]
 
+    # upper_bound = 999999
+    # if segment_length == 3:
+    #     # length will be 127
+    #     upper_bound = 66047
+    # elif segment_length == 5:
+    #     upper_bound = 110079
+    # elif segment_length == 10:
+    #     upper_bound = 220159
+
+    # limit the lower and upper bounds to specify the spectrogram lengths.
+    lower_bound = 0
+    if segment_length == 3:
+        # length will be 128
+        lower_bound = 66560
+    elif segment_length == 5:
+        lower_bound = 110080
+    elif segment_length == 10:
+        lower_bound = 220160
+
     upper_bound = 999999
     if segment_length == 3:
-        upper_bound = 66047
+        # length will be 128
+        upper_bound = 66559
     elif segment_length == 5:
-        upper_bound = 110079
+        upper_bound = 999999
     elif segment_length == 10:
-        upper_bound = 220159
+        upper_bound = 999999
 
     max_spec_length = -1
     min_spec_length = 1000000000
     for i in range(len(dataset)):
         sample = np.array(dataset[i])
 
-        sample_partitions = get_spectrogram_partitions(sample, expected_music_length, segment_length)
+        sample_partitions = get_spectrogram_partitions(sample, expected_music_length, segment_length, lower_bound, upper_bound)
         # length of each partition
 
-        if sample_partitions.shape[1] > upper_bound:
-            sample_partitions = sample_partitions[:, 0:upper_bound]
+        # if sample_partitions.shape[1] > upper_bound:
+        #     sample_partitions = sample_partitions[:, 0:upper_bound]
+
 
         # if expected_music_length == 10 and len_x > upper_bound:
         #     # need to ensure the length is less than upper_bound to have spectrograms of the same dimension
@@ -180,6 +204,8 @@ def spectrogram_of_dataset(dataset, expected_music_length, segment_length, windo
         #     sample_partitions = sample_partitions[:, 0:upper_bound * 3]
 
         for j in range(len(sample_partitions)):
+            spectrogram_labels.append(labels[i])
+
             x = sample_partitions[j]
 
             # if expected_music_length == 10:
@@ -224,22 +250,36 @@ def spectrogram_of_dataset(dataset, expected_music_length, segment_length, windo
         spectrograms = np.array(spectrograms)
     except:
         # cannot convert list of spectrograms to numpy array if the spectrograms have different dimensions.
-        print('Warning: cannot convert spectrograms to numpy array.')
-    return spectrograms
+        print('Warning 11: cannot convert spectrograms to numpy array.')
+    try:
+        spectrogram_labels = np.array(spectrogram_labels)
+    except:
+        print('Warning 12: cannot convert spectrograms labels to numpy array.')
+    return spectrograms, spectrogram_labels
 
 
-def get_spectrogram_partitions(sample, expected_music_length, seg_length_to_spectrogram):
+def get_spectrogram_partitions(sample, expected_music_length, segment_length, lower_bound, upper_bound):
     """
     Partition the sample into specified lengths. The extra end is truncated.
     :param sample: a sample.
     :param expected_music_length: the time length in seconds for the original music sample.
-    :param seg_length_to_spectrogram: length of the music segment in seconds passed to create spectrogram.
+    :param segment_length: length of the music segment in seconds passed to create spectrogram.
+    :param lower_bound: lower bound of length for partitioned sample.
+    :param upper_bound: upper bound of length for partitioned sample.
     :return: partitions of the sample.
     """
 
-    num_partitions = expected_music_length // seg_length_to_spectrogram
+    num_partitions = expected_music_length // segment_length
     len_sample = len(sample)
     len_partition = len_sample // num_partitions
+
+    if len_partition < lower_bound:
+        len_partition = upper_bound
+        num_partitions = num_partitions - 1
+        # print('Warning 9: length of partition less than lower bound. Set to upper bound.')
+    if len_partition > upper_bound:
+        len_partition = upper_bound
+        # print('Warning 10: length of partition larger than upper bound. Set to upper bound.')
 
     sample_partitions = np.empty((num_partitions, len_partition))
 
@@ -289,7 +329,7 @@ def data_preprocessing():
         print()
 
     # the length of music segments in seconds passed in to create spectrograms. Should be in (0, 10).
-    segment_length = 5
+    segment_length = 3
     # length of window, should be a power of 2 for faster computation.
     window_length = 1024
     # should use 50% window overlapping percentage.
@@ -301,15 +341,17 @@ def data_preprocessing():
     benchmark_labels = pickle.load(open('dataset/benchmark_labels_not_replicated.p', 'rb'))
     gtzan_labels = pickle.load(open('dataset/gtzan_labels_not_replicated.p', 'rb'))
 
-    benchmark_labels = replicate_elements_in_array(benchmark_labels, 10 // segment_length)
-    gtzan_labels = replicate_elements_in_array(gtzan_labels, 30 // segment_length)
+    # benchmark_labels = replicate_elements_in_array(benchmark_labels, 10 // segment_length)
+    # gtzan_labels = replicate_elements_in_array(gtzan_labels, 30 // segment_length)
 
     # compute spectrograms
     t_4 = time.time()
-    benchmark_spectrograms = spectrograms_benchmark(benchmark_dataset, segment_length, window_length, overlap_ratio)
+    benchmark_spectrograms, benchmark_labels = spectrograms_benchmark(benchmark_dataset, benchmark_labels,
+                                                                      segment_length, window_length, overlap_ratio)
     t_5 = time.time()
     print('The time used for calculating spectrograms for the Benchmark dataset was', t_5 - t_4)
-    gtzan_spectrograms = spectrograms_gtzan(gtzan_dataset, segment_length, window_length, overlap_ratio)
+    gtzan_spectrograms, gtzan_labels = spectrograms_gtzan(gtzan_dataset, gtzan_labels,
+                                                          segment_length, window_length, overlap_ratio)
     t_6 = time.time()
     print('The time used for calculating spectrograms for the GTZAN dataset was', t_6 - t_5)
 
