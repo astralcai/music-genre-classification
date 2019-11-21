@@ -367,5 +367,5 @@ def data_preprocessing():
                 open('dataset/benchmark_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
     pickle.dump(gtzan_spectrograms,
                 open('dataset/gtzan_spectrograms' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
-    pickle.dump(benchmark_labels, open('dataset/benchmark_labels' + seg_length_suffix + '.p', 'wb'))
-    pickle.dump(gtzan_labels, open('dataset/gtzan_labels' + seg_length_suffix + '.p', 'wb'))
+    pickle.dump(benchmark_labels, open('dataset/benchmark_labels' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
+    pickle.dump(gtzan_labels, open('dataset/gtzan_labels' + seg_length_suffix + window_length_suffix + '.p', 'wb'))
