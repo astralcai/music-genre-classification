@@ -49,11 +49,17 @@ def main():
     # todo: remove the temporary example for plotting a spectrogram.
     spectrogram = benchmark_spectrograms[0]
     plt.pcolormesh(10 * np.log10(spectrogram))
+    plt.title('Spectrogram')
+    plt.xlabel('time')
+    plt.ylabel('frequency')
     plt.colorbar()
     plt.show()
 
     spectrogram = gtzan_spectrograms[0]
     plt.pcolormesh(10 * np.log10(spectrogram))
+    plt.title('Spectrogram')
+    plt.xlabel('time')
+    plt.ylabel('frequency')
     plt.colorbar()
     plt.show()
 
