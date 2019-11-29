@@ -5,18 +5,15 @@ import numpy as np
 
 data_dict = np.load('drive/My Drive/vgg/vgg16.npy', encoding='latin1', allow_pickle=True).item()
 
+# pretrained vgg model, reference[2]
 def print_layer(t):
     print (t.op.name, ' ', t.get_shape().as_list(), '\n')
 
 def conv(x, d_out, name, finetune=False, xavier=False):
     d_in = x.get_shape()[-1].value
     with tf.name_scope(name) as scope:
-        # Fine-tuning
+        # Fine tuning
         if finetune:
-            '''
-            kernel = tf.Variable(tf.constant(data_dict[name][0]), name="weights")
-            bias = tf.Variable(tf.constant(data_dict[name][1]), name="bias")
-            '''
             kernel = tf.constant(data_dict[name][0], name="weights")
             bias = tf.constant(data_dict[name][1], name="bias")
             print ("finetune")
@@ -48,10 +45,6 @@ def fc(x, n_out, name, finetune=False, xavier=False):
     n_in = x.get_shape()[-1].value
     with tf.name_scope(name) as scope:
         if finetune:
-            '''
-            weight = tf.Variable(tf.constant(data_dict[name][0]), name="weights")
-            bias = tf.Variable(tf.constant(data_dict[name][1]), name="bias")
-            '''
             weight = tf.constant(data_dict[name][0], name="weights")
             bias = tf.constant(data_dict[name][1], name="bias")
             print ("finetune")
@@ -76,6 +69,7 @@ def fc(x, n_out, name, finetune=False, xavier=False):
 
 def VGG16(images, _dropout, n_cls):
 
+    # CNN layers
     conv1_1 = conv(images, 64, 'conv1_1', finetune=True)
     conv1_2 = conv(conv1_1, 64, 'conv1_2', finetune=True)
     pool1   = maxpool(conv1_2, 'pool1')
@@ -107,6 +101,7 @@ def VGG16(images, _dropout, n_cls):
     fc7      = fc(dropout1, 4096, 'fc7', xavier=True)
     dropout2 = tf.nn.dropout(fc7, _dropout)
     
+    # add layers on top
     fc8      = fc(dropout2, 17, 'fc8', xavier=True)
     dropout3 = tf.nn.dropout(fc8, _dropout)
     
