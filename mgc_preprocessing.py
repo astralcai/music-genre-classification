@@ -4,7 +4,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 
-import data_preprocessing
+import audio_preprocessing
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
 
     if run_data_preprocessing:
         st_data_preprocessing = time.time()
-        data_preprocessing.data_preprocessing()
+        audio_preprocessing.data_preprocessing()
         print('The total time used for loading and preprocessing the data was', time.time() - st_data_preprocessing)
 
     # modify the two parameters below to choose dataset
