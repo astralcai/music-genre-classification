@@ -40,13 +40,17 @@ def main():
     benchmark_labels = pickle.load(open('dataset/benchmark_labels' + seg_length_suffix + window_length_suffix + '.p', 'rb'))
     gtzan_labels = pickle.load(open('dataset/gtzan_labels' + seg_length_suffix + window_length_suffix + '.p', 'rb'))
 
-    print(benchmark_spectrograms[1].shape)
+    print('Spectrograms loaded.')
+    print('The dimension of the dataset for spectrograms from the Benchmark dataset is')
     print(benchmark_spectrograms.shape)
+    print('The dimension of the dataset for spectrograms from the Tzanetakis\' dataset is')
     print(gtzan_spectrograms.shape)
+    print('The number of labels for the Benchmark spectrograms is')
     print(benchmark_labels.shape)
+    print('The number of labels for the Tzanetakis\' spectrograms is')
     print(gtzan_labels.shape)
 
-    # todo: remove the temporary example for plotting a spectrogram.
+    # plot example spectrograms
     spectrogram = benchmark_spectrograms[0]
     plt.pcolormesh(10 * np.log10(spectrogram))
     plt.title('Spectrogram')

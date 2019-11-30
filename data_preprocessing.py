@@ -53,7 +53,6 @@ def read_all_music(base_path, classifications, sample_rate):
     dataset = []
     labels = []
 
-    # todo: remove debugging code
     max_length = -1
     min_length = 100000000
 
@@ -72,7 +71,6 @@ def read_all_music(base_path, classifications, sample_rate):
                 x = librosa.resample(x, sample_rate, 22050)
             len_x = len(x)
 
-            # todo: remove debugging code
             if len_x > max_length:
                 max_length = len_x
                 print('warning 1: max_length is', max_length, 'at', path_to_music)
@@ -212,13 +210,12 @@ def spectrogram_of_dataset(dataset, labels, expected_music_length, segment_lengt
             frequencies, times, Sxx = signal.spectrogram(x, window=window, noverlap=noverlap)
             spectrograms.append(Sxx)
 
-            # todo: remove debugging code
             if len(Sxx[0]) > max_spec_length:
                 max_spec_length = len(Sxx[0])
-                print('warning 3: max_spec_length is', max_spec_length, 'with len(x)', len(x))
+                # print('warning 3: max_spec_length is', max_spec_length, 'with len(x)', len(x))
             if len(Sxx[0]) < min_spec_length:
                 min_spec_length = len(Sxx[0])
-                print('warning 4: min_spec_length is', min_spec_length, 'with len(x)', len(x))
+                # print('warning 4: min_spec_length is', min_spec_length, 'with len(x)', len(x))
 
             # else:
             #     # expected_music_length == 30
@@ -228,7 +225,6 @@ def spectrogram_of_dataset(dataset, labels, expected_music_length, segment_lengt
             #     frequencies_2, times_2, Sxx_2 = signal.spectrogram(x[partition_size:partition_size * 2], window=window, noverlap=noverlap)
             #     frequencies_3, times_3, Sxx_3 = signal.spectrogram(x[partition_size * 2:], window=window, noverlap=noverlap)
             #
-            #     # todo: remove debugging code
             #     if len(Sxx_1[0]) > max_spec_length:
             #         max_spec_length = len(Sxx_1[0])
             #         print('warning 5: max_spec_length is', max_spec_length, 'with len(x)', len(x))
@@ -301,7 +297,6 @@ def data_preprocessing():
 
         classifications = np.array(['blues', 'hiphop', 'jazz', 'pop', 'rock'], dtype=object)
         # classifications = np.array(['blues'], dtype=object)
-        # todo: remove debugging code above
 
         # paths to datasets
         benchmark_base_path = 'dataset/benchmarkdataset/'
